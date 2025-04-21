@@ -9,13 +9,23 @@ class MPPI():
         np.random.seed(None)
         self.states = [[0,0,0,0]] # x, y, velocity, heading
        
-    def controls(self,num_traj, nominal_steering_degrees, nominal_throttle, steering_variance_degrees, throtle_variance):
+    def controls(self,horizon, nominal_steering_degrees, nominal_throttle, steering_variance_degrees, throtle_variance):
         nominal_control = np.array([np.radians(nominal_steering_degrees), nominal_throttle])
-        steering = np.radians(np.random.normal(0, steering_variance_degrees, (num_traj,1)))
-        throttle = np.random.normal(0,throtle_variance, (num_traj,1))
+        steering = np.radians(np.random.normal(0, steering_variance_degrees, (horizon,1)))
+        throttle = np.random.normal(0,throtle_variance, (horizon,1))
         noise = np.hstack((steering, throttle))
         return nominal_control + noise
-
+    
+    def generate_trajectories(self,controls, prev_state):
+        trajectory = [prev_state]
+        for control in controls:
+            x,y,velocity, heading = trajectory[-1]
+            x += control[1] * np.sin(control[0] + heading)
+            y += control[1] * np.cos(control[0] + heading)
+            heading += control[0]
+            trajectory.append([x,y,control[1], heading])
+        return np.array(trajectory)
+    
     def possible_states(self, controls, prev_state):
         pos_states = []
         pose = prev_state
@@ -33,12 +43,16 @@ if __name__ == "__main__":
     mppi = MPPI()
     n_traj = 20
     steer_degrees = 10
-    throttle = 10
+    throttle = 1
     steer_var = 10
     throttle_var = 0.1
     controls = mppi.controls(n_traj, steer_degrees, throttle, steer_var, throttle_var)
-    states = mppi.possible_states(controls)
+    print(controls)
+    states = mppi.possible_states(controls, mppi.states[-1])
     print(states)
+    trajectory = mppi.generate_trajectories(controls, mppi.states[-1])
+    print(trajectory)
+
 
     
 
