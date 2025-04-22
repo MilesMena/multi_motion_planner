@@ -8,8 +8,13 @@ class MPPI():
     def __init__(self):
         np.random.seed(None)
         self.states = [[0,0,0,0]] # x, y, velocity, heading
+
+    def controls_deterministic(self, horizon, nom_steer_deg, nom_throt):
+        steering = np.radians(np.full((horizon,1), nom_steer_deg))
+        throttle = np.full((horizon,1), nom_throt)
+        return np.hstack((steering, throttle))
        
-    def controls(self,horizon, nominal_steering_degrees, nominal_throttle, steering_variance_degrees, throtle_variance):
+    def controls_stochastic(self,horizon, nominal_steering_degrees, nominal_throttle, steering_variance_degrees, throtle_variance):
         nominal_control = np.array([np.radians(nominal_steering_degrees), nominal_throttle])
         steering = np.radians(np.random.normal(0, steering_variance_degrees, (horizon,1)))
         throttle = np.random.normal(0,throtle_variance, (horizon,1))
@@ -25,6 +30,53 @@ class MPPI():
             heading += control[0]
             trajectory.append([x,y,control[1], heading])
         return np.array(trajectory)
+    
+
+    def cost_function(self, grid, trajectories):
+        weight_heading = 1
+        weight_obstacles = 10
+        costs = []
+        size = grid.shape[0]
+        half = size // 2
+
+        for path in trajectories:
+            cost = 0
+            grid_points_x = [p[0] + half for p in path]
+            grid_points_y = [p[1] + half for p in path]
+            # print(grid_points_y)
+
+            # Interpolate between each pair of points
+            interp_x = np.concatenate([
+                np.linspace(grid_points_x[i], grid_points_x[i+1], 5)
+                for i in range(len(grid_points_x) - 1)
+            ])
+            interp_y = np.concatenate([
+                np.linspace(grid_points_y[i], grid_points_y[i+1], 5)
+                for i in range(len(grid_points_y) - 1)
+            ])
+
+            # Convert to integer grid indices (and clip to grid bounds)
+            # h, w = grid.shape
+            # indices = set()
+            # for x, y in zip(interp_x, interp_y):
+            #     xi, yi = int(round(x)), int(round(y))
+            #     xi = np.clip(xi, 0, h - 1)
+            #     yi = np.clip(yi, 0, w - 1)
+            #     indices.add((xi, yi))
+
+            # Check for any non-zero cell in grid along the path
+            collision = int(any(grid[int(y), int(x)] > 0 for x, y in zip(grid_points_x,grid_points_y)))
+            print(collision)
+
+            heading_change = np.abs(path[:-1, 3] - path[1:, 3])
+            cost += (weight_obstacles * collision) + (weight_heading * np.sum(heading_change))
+            costs.append(cost)
+
+        return np.array(costs)
+
+
+        
+
     
     def possible_states(self, controls, prev_state):
         pos_states = []

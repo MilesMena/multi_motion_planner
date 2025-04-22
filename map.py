@@ -9,8 +9,16 @@ class Map():
         # self.elevation_grid = self.generate_elevation_grid(h,w)
         self.mountain_grid = self.generate_mountainous_grid(h,w)
         self.terrain_grid = self.generate_terrain_grid(h,w)
+        self.wall_grid =  np.vstack((
+                                    
+                                    np.zeros((2*h//3,w)),
+                                    np.ones((h//3,w))
+                                    ))
+
+        # self.semantic_grid = self.generate_semantic_grid(h,w)
 
     def generate_obstacle_grid(self, h,w,num_obstacles):
+        # Make sure to not generate obstacles at the start
         base_grid = np.zeros((h,w))
         for n in range(num_obstacles):
             obs_size = np.random.randint(low=1, high=10)
