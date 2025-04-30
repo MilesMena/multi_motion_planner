@@ -9,11 +9,12 @@ class Map():
         # self.elevation_grid = self.generate_elevation_grid(h,w)
         self.mountain_grid = self.generate_mountainous_grid(h,w)
         self.terrain_grid = self.generate_terrain_grid(h,w)
-        self.wall_grid =  np.vstack((
+        self.wall_grid =  np.ones((h,w)) 
+        # np.vstack((
                                     
-                                    np.zeros((2*h//3,w)),
-                                    np.ones((h//3,w))
-                                    ))
+        #                             np.zeros((2*h//3,w)),
+        #                             np.ones((h//3,w))
+        #                             ))
 
         # self.semantic_grid = self.generate_semantic_grid(h,w)
 

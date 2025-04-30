@@ -1,6 +1,7 @@
 from map import Map
 from mppi import MPPI
 from plot import Plotter
+from robot import Robot
 import numpy as np
 import os
 import time
@@ -20,47 +21,41 @@ if __name__ == "__main__":
     # Classes
     map = Map(size, size, num_obstacles=n_obstacles)
     mppi = MPPI()
+    r1 = Robot([0,0,0,0])
+    r2 = Robot([20,0, 0,0])
+    mppi_2 = MPPI([10,10,0,5])
+
     plotter = Plotter()
 
     grid = map.obstacle_grid
 
 
-    # Controls and Trajectories
-    
-    for i in range(sim_steps):
-        if STOCHASTIC_CONTROLS:
-            controls = [mppi.controls_stochastic(horizon, steer_degrees, throttle, steer_var, throttle_var) for i in range(num_traj)]
-        else:
-            step = 2*steer_var // num_traj
-            start = -steer_var
-            stop = steer_var + step
-            controls = [mppi.controls_deterministic(horizon, steer, throttle) for steer in range(start, stop, step)]
-        trajectories = [mppi.generate_trajectories(control, mppi.states[-1]) for control in controls ]
+    # Controls -> if stochastic we should put in the for loop, but for now it doesn't change
+    controls = mppi.controls(horizon, steer_degrees, throttle, steer_var, throttle_var, STOCHASTIC_CONTROLS,num_traj)
+    for i in range(sim_steps):    
+        r1_traj = [mppi.generate_trajectories(c, r1.states[-1]) for c in controls ]
+        r2_traj = [mppi.generate_trajectories(c, r2.states[-1]) for c in controls ]
 
-        trajectory_costs = mppi.cost_function(grid, trajectories)
+        r1_costs = mppi.cost_function(grid, r1_traj)
+        r2_costs = mppi.cost_function(grid, r2_traj)
 
-        print(trajectory_costs)
-        # print(trajectories[np.argmin(trajectory_costs)])
-        # Plots
-        # # plotter.world(map.random_grid, [trajectories])
-        plotter.world(grid, trajectories)
-        # plotter.world(map.elevation_grid, trajectories)
-        # plotter.world(map.mountain_grid, trajectories)
-        # plotter.world(map.terrain_grid, trajectories)
+        plotter.world(grid, [r1_traj, r2_traj])
+        
+        r1.states.append(r1_traj[np.argmin(r1_costs)][-1])
+        r2.states.append(r2_traj[np.argmin(r2_costs)][-1])
 
-        prev_state = trajectories[np.argmin(trajectory_costs)][-1]
-        mppi.states.append(prev_state)
-        time.sleep(.1)
+        time.sleep(.3)
+        # plotter.world_3d(grid)
     # Plot one more time
-    trajectories = [mppi.generate_trajectories(control, mppi.states[-1]) for control in controls ]
-    trajectory_costs = mppi.cost_function(grid, trajectories)
-    plotter.world(grid, trajectories)
+    # trajectories = [mppi_1.generate_trajectories(control, mppi_1.states[-1]) for control in controls ]
+    # trajectory_costs = mppi_1.cost_function(grid, trajectories)
+    # plotter.world(grid, trajectories)
 
-    print(np.array(mppi.states))
-    print(map.wall_grid[:,163])
-    print(map.wall_grid[163, 99])
+    # print(np.array(mppi_1.states))
+    # print(map.wall_grid[:,163])
+    # print(map.wall_grid[163, 99])
 
 
-    os.makedirs("txt_files", exist_ok=True)
-    np.savetxt("txt_files/grid.txt",map.wall_grid ,fmt="%.2f")
-    np.savetxt("txt_files/example_traj.txt", trajectories[0], fmt= "%.2f")
+    # os.makedirs("txt_files", exist_ok=True)
+    # np.savetxt("txt_files/grid.txt",map.wall_grid ,fmt="%.2f")
+    # np.savetxt("txt_files/example_traj.txt", trajectories[0], fmt= "%.2f")

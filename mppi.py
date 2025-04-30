@@ -5,10 +5,19 @@ np.set_printoptions(precision=3, suppress=True, floatmode='fixed')
 
 
 class MPPI():
-    def __init__(self):
+    def __init__(self, init_state=[0,0,0,0]):
         np.random.seed(None)
-        self.states = [[0,0,0,0]] # x, y, velocity, heading
+        self.states = [init_state] # x, y, velocity, heading
 
+    def controls(self, horizon, steer, throt,steer_var, throt_var, stochastic_controls=False, num_traj=10):
+        if stochastic_controls:
+            return [self.controls_stochastic(horizon,steer, throt, steer_var, throt_var) for i in range(num_traj)]
+        else:
+            step = 2*steer_var // num_traj
+            start = -steer_var
+            stop = steer_var + step
+            return [self.controls_deterministic(horizon, steer, throt) for steer in range(start, stop, step)]
+        
     def controls_deterministic(self, horizon, nom_steer_deg, nom_throt):
         steering = np.radians(np.full((horizon,1), nom_steer_deg))
         throttle = np.full((horizon,1), nom_throt)
@@ -66,7 +75,7 @@ class MPPI():
 
             # Check for any non-zero cell in grid along the path
             collision = int(any(grid[int(y), int(x)] > 0 for x, y in zip(grid_points_x,grid_points_y)))
-            print(collision)
+            # print(collision)
 
             heading_change = np.abs(path[:-1, 3] - path[1:, 3])
             cost += (weight_obstacles * collision) + (weight_heading * np.sum(heading_change))
