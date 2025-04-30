@@ -1,21 +1,18 @@
 import numpy as np
 np.set_printoptions(precision=3, suppress=True, floatmode='fixed')
 
-
-
-
 class MPPI():
     def __init__(self, init_state=[0,0,0,0]):
         np.random.seed(None)
-        self.states = [init_state] # x, y, velocity, heading
+        self.states =  init_state # x, y, velocity, heading
 
     def controls(self, horizon, steer, throt,steer_var, throt_var, stochastic_controls=False, num_traj=10):
         if stochastic_controls:
             return [self.controls_stochastic(horizon,steer, throt, steer_var, throt_var) for i in range(num_traj)]
         else:
             step = 2*steer_var // num_traj
-            start = -steer_var
-            stop = steer_var + step
+            start = -steer_var + steer
+            stop = steer_var + step + steer
             return [self.controls_deterministic(horizon, steer, throt) for steer in range(start, stop, step)]
         
     def controls_deterministic(self, horizon, nom_steer_deg, nom_throt):
@@ -33,17 +30,17 @@ class MPPI():
     def generate_trajectories(self,controls, prev_state):
         trajectory = [prev_state]
         for control in controls:
+            # print(trajectory)
             x,y,velocity, heading = trajectory[-1]
             x += control[1] * np.sin(control[0] + heading)
             y += control[1] * np.cos(control[0] + heading)
             heading += control[0]
             trajectory.append([x,y,control[1], heading])
         return np.array(trajectory)
-    
 
     def cost_function(self, grid, trajectories):
         weight_heading = 1
-        weight_obstacles = 10
+        weight_obstacles = 100
         costs = []
         size = grid.shape[0]
         half = size // 2
@@ -82,10 +79,6 @@ class MPPI():
             costs.append(cost)
 
         return np.array(costs)
-
-
-        
-
     
     def possible_states(self, controls, prev_state):
         pos_states = []

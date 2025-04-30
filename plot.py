@@ -3,7 +3,7 @@ import numpy as np
 import plotly.graph_objects as go
 from mpl_toolkits.mplot3d import Axes3D
 import plotly.graph_objects as go
-
+import os
 
 
 class Plotter:
@@ -49,6 +49,18 @@ class Plotter:
                     ax.plot(grid_points_x, grid_points_y, linewidth = 1, zorder=1) # , c='red', s=30, edgecolors='black'
                     ax.scatter(grid_points_x, grid_points_y,  s=1, zorder =2) #edgecolors='black',
 
+                    # Plot a star at the start of the first path
+                    start_point = path[0]
+                    ax.scatter(
+                        start_point[0] + half,
+                        start_point[1] + half,
+                        marker='*',
+                        s=75,
+                        # color='gold',
+                        # edgecolors='black',
+                        zorder=3,
+                        label='Start'
+                    )
 
         # Clean up
         ax.set_title('Traversability Map')
@@ -57,6 +69,7 @@ class Plotter:
         plt.colorbar(cax, label='Cost')
 
         if SAVE:
+            os.makedirs("plots", exist_ok=True)
             plt.savefig("plots/grid.png")
 
 

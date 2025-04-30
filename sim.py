@@ -11,23 +11,22 @@ if __name__ == "__main__":
     size = 200
     STOCHASTIC_CONTROLS = False
     horizon = 10
-    steer_degrees = 0
+    steer_degrees = -20 # positive turns left (ego view)
     throttle = 2
     steer_var = 30
     throttle_var = 0.1
     num_traj = 10
-    sim_steps =5
+    sim_steps = 5
     n_obstacles = 30
     # Classes
     map = Map(size, size, num_obstacles=n_obstacles)
     mppi = MPPI()
-    r1 = Robot([0,0,0,0])
-    r2 = Robot([20,0, 0,0])
+    grid = map.track_grid
+    r1 = Robot([0,0,0,0], grid)
+    r2 = Robot([10,0, 0,0], grid)
     mppi_2 = MPPI([10,10,0,5])
 
     plotter = Plotter()
-
-    grid = map.obstacle_grid
 
 
     # Controls -> if stochastic we should put in the for loop, but for now it doesn't change

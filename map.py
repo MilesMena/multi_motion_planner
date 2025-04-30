@@ -1,5 +1,7 @@
 import numpy as np
 from scipy.ndimage import gaussian_filter
+import matplotlib.pyplot as plt
+import os
 
 
 class Map():
@@ -10,6 +12,7 @@ class Map():
         self.mountain_grid = self.generate_mountainous_grid(h,w)
         self.terrain_grid = self.generate_terrain_grid(h,w)
         self.wall_grid =  np.ones((h,w)) 
+        self.track_grid = self.generate_track_grid(h,w)
         # np.vstack((
                                     
         #                             np.zeros((2*h//3,w)),
@@ -17,7 +20,7 @@ class Map():
         #                             ))
 
         # self.semantic_grid = self.generate_semantic_grid(h,w)
-
+    
     def generate_obstacle_grid(self, h,w,num_obstacles):
         # Make sure to not generate obstacles at the start
         base_grid = np.zeros((h,w))
@@ -137,3 +140,47 @@ class Map():
         grid /= grid.max()
 
         return grid
+    
+    def generate_track_grid(self, h, w):
+        block_w_ratio = 3
+        radius = ((w//block_w_ratio))//2
+        step = 1.0
+
+        center_block = np.ones((h//block_w_ratio,w//block_w_ratio))
+        x = np.arange(-radius, radius + step -1 , step)
+        y = np.arange(0, radius + step -1 , step)  # Only top half
+        X, Y = np.meshgrid(x, y)
+        semi = np.ones_like(X)
+        # Mask out values outside the semi-circle
+        mask = X**2 + Y**2 > radius**2
+        semi[mask] = 0
+        semi_padding_h = (h//block_w_ratio)//4
+        semi_padding_w = X.shape[1]
+        semi_padding = np.zeros((semi_padding_h,semi_padding_w))
+        # semi_padding = np.vstack((np.zeros((semi_padding_h,semi_padding_w)), np.ones((semi_padding_h, semi_padding_w))))
+        print(semi_padding.shape, semi.shape)
+
+        semi = np.vstack(( semi, semi_padding))
+        # print(semi)
+        # print(semi.shape,center_block.shape)
+        grid = np.vstack((np.flip(semi), center_block,semi))
+        zero_w = w//(4*block_w_ratio)
+        zero_padding =np.zeros((grid.shape[0],zero_w))
+        # print(padding.shape, grid.shape)
+        grid = np.hstack((zero_padding, grid, zero_padding))
+        wall_padding = np.ones((grid.shape[0], grid.shape[1]//5))
+        grid = np.hstack((wall_padding, grid, wall_padding))
+        print(grid.shape)
+
+        wall_padding = np.ones((grid.shape[0]//7, grid.shape[1]))
+        grid = np.vstack((wall_padding, grid,wall_padding))
+        print(grid.shape)
+        DEBUG = True
+        if DEBUG:
+            fig, ax = plt.subplots()
+            cax = ax.imshow(grid, cmap='Reds', vmin=0, vmax = 1, interpolation='nearest') # binary, greys, Reds, 
+            os.makedirs("plots", exist_ok=True)
+            plt.savefig("plots/test_grid.png")
+
+        return grid
+
